@@ -26,16 +26,21 @@ struct
   exception MultiplyDeclaredError of Ast.id
   exception ReturnTypeError
 
-  (* InferExpIdType looks through the environment to see if the id
+  (* findIdTyp looks through the environment to see if the id
    * has been declared and returns the type if so, otherwise
    * raises exception.
    *)
-  fun inferExpIdType (g : env, id : Ast.id ) : AnnAst.typ =
-    case g of 
-         []   => raise UndeclaredError(id)
-    | x::xs   => case M.find(x, id) of
-                    NONE   => inferExpIdType(xs, id)
-                  | SOME typ   => typ
+
+  fun findIdTyp ( id : string, g : env ) : AnnAst.typ =
+        case g of 
+          []    => raise UndeclaredError(id)
+        | x::xs => case M.find(x, id) of
+                          NONE     => findIdTyp(id, xs)
+                        | SOME typ => typ
+
+(* Takes in an AnnAst.exp literal and returns the corresponding
+ * AnnAst.typ.
+ *)
 
   fun inferExp (e : Ast.exp, g : env ) : AnnAst.exp =
       case e of
@@ -44,19 +49,30 @@ struct
       | Ast.EString(s)    => AnnAst.EString(s)
       | Ast.ETrue         => AnnAst.ETrue
       | Ast.EFalse        => AnnAst.EFalse
-      | Ast.EId(id)       => let
-                                val typOfEId = inferExpIdType(g, id)
-                              in
-                                AnnAst.EId(id, typOfEId)
-                              end
+
       (*
       | Ast.ECall(id, l)  => *)
-      | Ast.EPostIncr(id) => (case inferExpIdType(g, id) of
-                                  AnnAst.Tint => AnnAst.EPostDecr(id, inferExpIdType(g, id))
+
+    (* This looks at type of the id, and if it is a AnnAst.Tint, returns
+     * the annotated version with the typ and id.  Otherwise it
+     * raises a type error.
+     *)
+      | Ast.EPostIncr(id) => (case findIdTyp(id, g) of
+                                  AnnAst.Tint => AnnAst.EPostDecr(id, findIdTyp(id, g))
                                 | _           => raise TypeError )
-      | Ast.EPostDecr(id) => (case inferExpIdType(g, id) of
-                                  AnnAst.Tint => AnnAst.EPostDecr(id, inferExpIdType(g, id))
+      | Ast.EPostDecr(id) => (case findIdTyp(id, g) of
+                                  AnnAst.Tint => AnnAst.EPostDecr(id, findIdTyp(id, g))
                                 | _           => raise TypeError )
+
+     (* This looks at the literal value of the expression
+      * and if it is either a ETrue or EFalse, returns an
+      * AnnAst.ENot() with the value of the expression and
+      * the Tbool type.  Otherwise raises a type error.
+      *)
+      | Ast.ENot(exp)     => (case inferExp(exp, g) of
+                                AnnAst.ETrue  => AnnAst.ENot(inferExp(exp, g), AnnAst.Tbool)
+                              | AnnAst.EFalse => AnnAst.ENot(inferExp(exp,g), AnnAst.Tbool)
+                              | _             => raise TypeError )
       | _                 => raise TypeError
 
   (*  inferExpNoEnv e = e', where e' is the annotated expression
