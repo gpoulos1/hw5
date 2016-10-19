@@ -26,6 +26,17 @@ struct
   exception MultiplyDeclaredError of Ast.id
   exception ReturnTypeError
 
+  (* InferExpIdType looks through the environment to see if the id
+   * has been declared and returns the type if so, otherwise
+   * raises exception.
+   *)
+  fun inferExpIdType (g : env, id : Ast.id ) : AnnAst.typ =
+    case g of 
+         []   => raise UndeclaredError(id)
+    | x::xs   => case M.find(x, id) of
+                    NONE   => inferExpIdType(xs, id)
+                  | SOME typ   => typ
+
   fun inferExp (e : Ast.exp, g : env ) : AnnAst.exp =
       case e of
         Ast.EInt(i)       => AnnAst.EInt(i)
@@ -33,19 +44,19 @@ struct
       | Ast.EString(s)    => AnnAst.EString(s)
       | Ast.ETrue         => AnnAst.ETrue
       | Ast.EFalse        => AnnAst.EFalse
-
-      (* This looks through the environment to see if the id
-       * has been declared and returns the type if so, otherwise
-       * raises exception.
-       *)
-      | Ast.EId(id)       => ( case g of 
-                                   []   => raise UndeclaredError(id)
-                              | x::xs   => case M.find(x, id) of
-                                                  NONE   => inferExp(e, xs)
-                                            | SOME typ   => AnnAst.EId(id, typ) )
+      | Ast.EId(id)       => let
+                                val typOfEId = inferExpIdType(g, id)
+                              in
+                                AnnAst.EId(id, typOfEId)
+                              end
       (*
       | Ast.ECall(id, l)  => *)
-
+      | Ast.EPostIncr(id) => (case inferExpIdType(g, id) of
+                                  AnnAst.Tint => AnnAst.EPostDecr(id, inferExpIdType(g, id))
+                                | _           => raise TypeError )
+      | Ast.EPostDecr(id) => (case inferExpIdType(g, id) of
+                                  AnnAst.Tint => AnnAst.EPostDecr(id, inferExpIdType(g, id))
+                                | _           => raise TypeError )
       | _                 => raise TypeError
 
   (*  inferExpNoEnv e = e', where e' is the annotated expression
