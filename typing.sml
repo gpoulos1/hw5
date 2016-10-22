@@ -47,6 +47,29 @@ struct
       | _         => raise TypeError
 
 
+  (* typeOfExp takes in an AnnAst.exp and returns it's type.
+   * This should probably move to AnnAst.sml
+   *)
+  fun typeOfExp ( e : AnnAst.exp, g : env ) : AnnAst.typ =
+    case e of
+      AnnAst.EInt(i)          => AnnAst.Tint
+   |  AnnAst.EDouble(d)       => AnnAst.Tdouble
+   |  AnnAst.EString(s)       => AnnAst.Tstring
+   |  AnnAst.ETrue            => AnnAst.Tbool
+   |  AnnAst.EFalse           => AnnAst.Tbool
+   |  AnnAst.EId(e1, t)       => t
+   |  AnnAst.ECall(i, l, t)   => t
+   |  AnnAst.EPostIncr(e1, t) => t
+   |  AnnAst.EPostDecr(e1, t) => t
+   |  AnnAst.EPreIncr(e1, t)  => t
+   |  AnnAst.EPreDecr(e1, t)  => t
+   |  AnnAst.EMul(e1, e2, t)  => t
+   |  AnnAst.EDiv(e1, e2, t)  => t
+   |  AnnAst.EMod(e1, e2, t)  => t
+   |  AnnAst.EAdd(e1, e2, t)  => t
+   |  AnnAst.ESub(e1, e2, t)  => t
+   |  _                       => raise TypeError
+
   fun inferExp (e : Ast.exp, g : env ) : AnnAst.exp =
       case e of
         Ast.EInt(i)       => AnnAst.EInt(i)
@@ -75,6 +98,7 @@ struct
     (* ensureArithType takes in two Ast.exps and checks to make sure
      * either both evaluate to an int, or both evaluate to a double
      *)
+
       ensureArithType (e1: Ast.exp, e2: Ast.exp, g: env) : AnnAst.typ =
         case inferExp(e1, g) of 
         AnnAst.EInt(i)    => (case inferExp(e2, g) of 
