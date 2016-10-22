@@ -38,6 +38,16 @@ struct
                           NONE     => findIdTyp(id, xs)
                         | SOME typ => typ
 
+  (* A helper function used for increment/decrement expressions.
+   * Makes sure that the id has type int and returns the same type,
+   * otherwise raises a type error.
+   *)
+
+  fun incrDecrHelp (id : string, g : env) : AnnAst.typ =
+    case findIdTyp(id, g) of
+      AnnAst.Tint => AnnAst.Tint
+      | _         => raise TypeError
+
 (* Takes in an AnnAst.exp literal and returns the corresponding
  * AnnAst.typ.
  *)
