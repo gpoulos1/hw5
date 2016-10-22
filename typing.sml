@@ -65,15 +65,17 @@ struct
                               | _             => raise TypeError )
       | Ast.EPreIncr(id)  => AnnAst.EPreIncr(id, ensureInt(id, g))
       | Ast.EPreDecr(id)  => AnnAst.EPreDecr(id, ensureInt(id, g))
-      | Ast.EMul(e1, e2)  => AnnAst.EMul(inferExp(e1, g), inferExp(e2, g), arithHelp(e1, e2, g))
-      | Ast.EDiv(e1, e2)  => AnnAst.EDiv(inferExp(e1, g), inferExp(e2, g), arithHelp(e1, e2, g))
-      | Ast.EAdd(e1, e2)  => AnnAst.EAdd(inferExp(e1, g), inferExp(e2, g), arithHelp(e1, e2, g))
-      | Ast.ESub(e1, e2)  => AnnAst.ESub(inferExp(e1, g), inferExp(e2, g), arithHelp(e1, e2, g))
+      | Ast.EMul(e1, e2)  => AnnAst.EMul(inferExp(e1, g), inferExp(e2, g), ensureArithType(e1, e2, g))
+      | Ast.EDiv(e1, e2)  => AnnAst.EDiv(inferExp(e1, g), inferExp(e2, g), ensureArithType(e1, e2, g))
+      | Ast.EAdd(e1, e2)  => AnnAst.EAdd(inferExp(e1, g), inferExp(e2, g), ensureArithType(e1, e2, g))
+      | Ast.ESub(e1, e2)  => AnnAst.ESub(inferExp(e1, g), inferExp(e2, g), ensureArithType(e1, e2, g))
       | _                 => raise TypeError
 
     and
-      
-      arithHelp (e1: Ast.exp, e2: Ast.exp, g: env) : AnnAst.typ =
+    (* ensureArithType takes in two Ast.exps and checks to make sure
+     * either both evaluate to an int, or both evaluate to a double
+     *)
+      ensureArithType (e1: Ast.exp, e2: Ast.exp, g: env) : AnnAst.typ =
         case inferExp(e1, g) of 
         AnnAst.EInt(i)    => (case inferExp(e2, g) of 
                               AnnAst.EInt(i)     => AnnAst.Tint
