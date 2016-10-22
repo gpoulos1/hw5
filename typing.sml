@@ -50,7 +50,7 @@ struct
   (* typeOfExp takes in an AnnAst.exp and returns it's type.
    * This should probably move to AnnAst.sml
    *)
-  fun typeOfExp ( e : AnnAst.exp, g : env ) : AnnAst.typ =
+  fun typeOfExp ( e : AnnAst.exp) : AnnAst.typ =
     case e of
       AnnAst.EInt(i)          => AnnAst.Tint
    |  AnnAst.EDouble(d)       => AnnAst.Tdouble
@@ -98,14 +98,13 @@ struct
     (* ensureArithType takes in two Ast.exps and checks to make sure
      * either both evaluate to an int, or both evaluate to a double
      *)
-
       ensureArithType (e1: Ast.exp, e2: Ast.exp, g: env) : AnnAst.typ =
         case inferExp(e1, g) of 
-        AnnAst.EInt(i)    => (case inferExp(e2, g) of 
-                              AnnAst.EInt(i)     => AnnAst.Tint
+        AnnAst.EInt(i)    => (case (typeOfExp(inferExp(e2, g))) of 
+                              AnnAst.Tint     => AnnAst.Tint
                               |_              => raise TypeError)
-      | AnnAst.EDouble(d) => (case inferExp(e2, g) of 
-                               AnnAst.EDouble(d) => AnnAst.Tdouble
+      | AnnAst.EDouble(d) => (case (typeOfExp(inferExp(e2, g))) of 
+                               AnnAst.Tdouble => AnnAst.Tdouble
                                |_             => raise TypeError)
       | _                 => raise TypeError
 
