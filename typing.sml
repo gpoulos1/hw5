@@ -99,11 +99,11 @@ struct
      * either both evaluate to an int, or both evaluate to a double
      *)
       ensureArithType (e1: Ast.exp, e2: Ast.exp, g: env) : AnnAst.typ =
-        case inferExp(e1, g) of 
-        AnnAst.EInt(i)    => (case (typeOfExp(inferExp(e2, g))) of 
+        case typeOfExp(inferExp(e1, g)) of 
+        AnnAst.Tint    => (case (typeOfExp(inferExp(e2, g))) of 
                               AnnAst.Tint     => AnnAst.Tint
                               |_              => raise TypeError)
-      | AnnAst.EDouble(d) => (case (typeOfExp(inferExp(e2, g))) of 
+      | AnnAst.Tdouble => (case (typeOfExp(inferExp(e2, g))) of 
                                AnnAst.Tdouble => AnnAst.Tdouble
                                |_             => raise TypeError)
       | _                 => raise TypeError
