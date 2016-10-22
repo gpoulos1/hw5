@@ -30,7 +30,6 @@ struct
    * has been declared and returns the type if so, otherwise
    * raises exception.
    *)
-
   fun findIdTyp ( id : string, g : env ) : AnnAst.typ =
         case g of 
           []    => raise UndeclaredError(id)
@@ -38,19 +37,15 @@ struct
                           NONE     => findIdTyp(id, xs)
                         | SOME typ => typ
 
-  (* A helper function used for increment/decrement expressions.
+  (* ensureInt is a helper function used for increment/decrement expressions.
    * Makes sure that the id has type int and returns the same type,
    * otherwise raises a type error.
    *)
-
-  fun incrDecrHelp (id : string, g : env) : AnnAst.typ =
+  fun ensureInt (id : string, g : env) : AnnAst.typ =
     case findIdTyp(id, g) of
       AnnAst.Tint => AnnAst.Tint
       | _         => raise TypeError
 
-(* Takes in an AnnAst.exp literal and returns the corresponding
- * AnnAst.typ.
- *)
 
   fun inferExp (e : Ast.exp, g : env ) : AnnAst.exp =
       case e of
@@ -59,30 +54,33 @@ struct
       | Ast.EString(s)    => AnnAst.EString(s)
       | Ast.ETrue         => AnnAst.ETrue
       | Ast.EFalse        => AnnAst.EFalse
-
-      (*
-      | Ast.ECall(id, l)  => *)
-
-    (* This looks at type of the id, and if it is a AnnAst.Tint, returns
-     * the annotated version with the typ and id.  Otherwise it
-     * raises a type error.
-     *)
-      | Ast.EPostIncr(id) => (case findIdTyp(id, g) of
-                                  AnnAst.Tint => AnnAst.EPostDecr(id, findIdTyp(id, g))
-                                | _           => raise TypeError )
-      | Ast.EPostDecr(id) => (case findIdTyp(id, g) of
-                                  AnnAst.Tint => AnnAst.EPostDecr(id, findIdTyp(id, g))
-                                | _           => raise TypeError )
-
-     (* This looks at the literal value of the expression
-      * and if it is either a ETrue or EFalse, returns an
-      * AnnAst.ENot() with the value of the expression and
-      * the Tbool type.  Otherwise raises a type error.
-      *)
+      | Ast.EId(id)       => AnnAst.EId(id, findIdTyp (id, g))
+      (* Unsure about ECall *)
+      | Ast.ECall(id, l)  => AnnAst.EId(id, findIdTyp (id, g))
+      | Ast.EPostIncr(id) => AnnAst.EPostIncr(id, ensureInt(id, g))
+      | Ast.EPostDecr(id) => AnnAst.EPostDecr(id, ensureInt(id, g))
       | Ast.ENot(exp)     => (case inferExp(exp, g) of
                                 AnnAst.ETrue  => AnnAst.ENot(inferExp(exp, g), AnnAst.Tbool)
-                              | AnnAst.EFalse => AnnAst.ENot(inferExp(exp,g), AnnAst.Tbool)
+                              | AnnAst.EFalse => AnnAst.ENot(inferExp(exp, g), AnnAst.Tbool)
                               | _             => raise TypeError )
+      | Ast.EPreIncr(id)  => AnnAst.EPreIncr(id, ensureInt(id, g))
+      | Ast.EPreDecr(id)  => AnnAst.EPreDecr(id, ensureInt(id, g))
+      | Ast.EMul(e1, e2)  => AnnAst.EMul(inferExp(e1, g), inferExp(e2, g), arithHelp(e1, e2, g))
+      | Ast.EDiv(e1, e2)  => AnnAst.EDiv(inferExp(e1, g), inferExp(e2, g), arithHelp(e1, e2, g))
+      | Ast.EAdd(e1, e2)  => AnnAst.EAdd(inferExp(e1, g), inferExp(e2, g), arithHelp(e1, e2, g))
+      | Ast.ESub(e1, e2)  => AnnAst.ESub(inferExp(e1, g), inferExp(e2, g), arithHelp(e1, e2, g))
+      | _                 => raise TypeError
+
+    and
+      
+      arithHelp (e1: Ast.exp, e2: Ast.exp, g: env) : AnnAst.typ =
+        case inferExp(e1, g) of 
+        AnnAst.EInt(i)    => (case inferExp(e2, g) of 
+                              AnnAst.EInt(i)     => AnnAst.Tint
+                              |_              => raise TypeError)
+      | AnnAst.EDouble(d) => (case inferExp(e2, g) of 
+                               AnnAst.EDouble(d) => AnnAst.Tdouble
+                               |_             => raise TypeError)
       | _                 => raise TypeError
 
   (*  inferExpNoEnv e = e', where e' is the annotated expression
